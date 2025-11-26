@@ -1,0 +1,10 @@
+[project]
+name = "postgres-to-databricks-cdc"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "dlt[databricks,postgres,sql-database]>=1.18.2",
+    "rich>=13.7.0",
+]
