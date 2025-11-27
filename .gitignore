@@ -43,5 +43,9 @@ Thumbs.db
 .pytest_cache
 .coverage
 
+# LLM / AI Memory (MUST BE IGNORED)
+.gemini
+.claude
+
 # Project specific ignored scripts
 scripts/simulate_transactions.py
