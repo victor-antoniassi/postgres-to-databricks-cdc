@@ -24,7 +24,6 @@ from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
 
-# Import CDC source from local pg_replication module
 from pg_replication import replication_resource
 from pg_replication.helpers import init_replication
 from utils.logger import setup_logger
@@ -141,7 +140,7 @@ def run_cdc_load():
     logger.info(f"Found [bold green]{len(tables)}[/bold green] table(s) to monitor")
     logger.debug(f"Tables: {', '.join(tables)}")
     
-    # Initialize replication
+    # Initialize replication slot and publication
     # We pass names explicitly but leave credentials to be picked up from env vars
     logger.info("Initializing replication slot and publication...")
     init_replication(

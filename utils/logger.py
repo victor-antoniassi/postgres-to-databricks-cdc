@@ -8,8 +8,8 @@ Usage:
     from utils.logger import setup_logger
     
     logger = setup_logger(__name__)
-    logger.info("Pipeline started")
-    logger.error("An error occurred")
+    logger.info("Processing started")
+    logger.warning("High memory usage detected")
 """
 
 import logging
@@ -28,11 +28,6 @@ def setup_logger(name: str, level: str = None) -> logging.Logger:
     
     Returns:
         Configured logger instance with RichHandler
-    
-    Example:
-        >>> logger = setup_logger(__name__)
-        >>> logger.info("Processing started")
-        >>> logger.warning("High memory usage detected")
     """
     # Determine log level
     if level is None:
@@ -50,14 +45,14 @@ def setup_logger(name: str, level: str = None) -> logging.Logger:
         return logger
     
     # Configure rich console handler
-    console = Console(stderr=True)  # Log to stderr by default
+    console = Console(stderr=True)
     rich_handler = RichHandler(
         console=console,
         show_time=True,
-        show_path=False,  # Don't show file paths in production
-        markup=True,      # Allow rich markup in log messages
-        rich_tracebacks=True,  # Beautiful exception formatting
-        tracebacks_show_locals=True,  # Show local vars in exceptions
+        show_path=False,
+        markup=True,
+        rich_tracebacks=True,
+        tracebacks_show_locals=True,
     )
     
     # Set format for log messages

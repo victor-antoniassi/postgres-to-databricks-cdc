@@ -47,7 +47,7 @@ def run_full_load():
     pipeline = dlt.pipeline(
         pipeline_name="postgres_prod_to_databricks",
         destination="databricks",
-        dataset_name="bronze"  # Target Schema in Unity Catalog
+        dataset_name="bronze"
     )
     
     logger.info(f"Pipeline configured: [cyan]{pipeline.pipeline_name}[/cyan]")
@@ -62,7 +62,6 @@ def run_full_load():
     with psycopg2.connect(creds.to_native_representation()) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
-            # Filter out dlt internal tables (start with _dlt)
             tables = [row[0] for row in cur.fetchall() if not row[0].startswith("_dlt")]
     
     logger.info(f"Found [bold green]{len(tables)}[/bold green] table(s) to replicate")
@@ -77,7 +76,7 @@ def run_full_load():
     # Run the pipeline with replace disposition
     info = pipeline.run(
         snapshot_source,
-        write_disposition="replace",  # Replaces existing tables
+        write_disposition="replace",
         loader_file_format="parquet"
     )
     

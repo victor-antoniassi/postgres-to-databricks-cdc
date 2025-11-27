@@ -2,21 +2,20 @@
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: postgres_to_databricks_cdc
-  uuid: 5d1e8c7c-4a3b-4e0f-9d2a-7b8f9e6a2c3d # UUID gerado aleatoriamente
+  uuid: 5d1e8c7c-4a3b-4e0f-9d2a-7b8f9e6a2c3d
 
-# Inclui os arquivos de configuração de jobs e pipelines.
 include:
   - resources/jobs/*.job.yml
 
-# Define como o código Python é empacotado.
-# Para este projeto, vamos usar o formato de wheel, que é a abordagem recomendada
-# para empacotar código Python para execução em Jobs no Databricks.
+# Defines how Python code is packaged.
+# For this project, we use the wheel format, which is the recommended approach
+# for packaging Python code for execution in Databricks Jobs.
 artifacts:
   postgres_cdc_wheel:
     type: whl
-    build: uv build --wheel # Usando uv build para criar o wheel
+    build: uv build --wheel
 
-# Variáveis que podem ser usadas nos jobs e pipelines.
+# Variables that can be used in jobs and pipelines.
 variables:
   catalog:
     description: The Unity Catalog to use for tables.
@@ -25,26 +24,26 @@ variables:
 
 targets:
   dev:
-    # O target padrão usa 'mode: development' para criar uma cópia de desenvolvimento.
-    # - Recursos implantados são prefixados com '[dev seu_nome_de_usuario]'
-    # - Quaisquer agendamentos de jobs são pausados por padrão.
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources are prefixed with '[dev your_username]'
+    # - Any job schedules are paused by default.
     mode: development
     default: true
     workspace:
-      host: https://dbc-2b79b085-f261.cloud.databricks.com # Host do seu workspace
+      host: https://dbc-2b79b085-f261.cloud.databricks.com
     variables:
-      catalog: chinook_lakehouse # Seu catálogo encontrado no README
-      schema: bronze             # Seu schema padrão, ajustável conforme necessidade
+      catalog: chinook_lakehouse
+      schema: bronze
 
   prod:
     mode: production
     workspace:
-      host: https://dbc-2b79b085-f261.cloud.databricks.com # Host do seu workspace de produção
-      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target} # Caminho de deploy em prod
+      host: https://dbc-2b79b085-f261.cloud.databricks.com
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: chinook_lakehouse
       schema: bronze
-    # Permissões de exemplo para o ambiente de produção.
+    # Example permissions for the production environment.
     permissions:
-      - user_name: victor@antoniassi.xyz # Substituir pelo seu email ou de um Service Principal
+      - user_name: victor@antoniassi.xyz
         level: CAN_MANAGE
