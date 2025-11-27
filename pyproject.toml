@@ -3,8 +3,25 @@ name = "postgres-to-databricks-cdc"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "~=3.12.0"
 dependencies = [
     "dlt[databricks,postgres,sql-database]>=1.18.2",
+    "typing-extensions>=4.11.0",
     "rich>=13.7.0",
 ]
+
+
+[project.scripts]
+run_pipeline = "pipeline_main:main" # Our entry point
+
+[build-system]
+requires = ["hatchling"] # No hatch-vcs needed for static version
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# Configure hatchling for flat layout:
+# Include top-level Python files and our package directories.
+# Exclude the resources/ directory that contains bundle YAMLs.
+include = ["*.py", "pg_replication", "utils"] # Ensure top-level .py and packages are included
+exclude = ["resources", "scripts", "tests", "build", "dist"]
+

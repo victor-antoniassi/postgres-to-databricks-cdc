@@ -17,90 +17,42 @@ This project implements a robust data ingestion pipeline that replicates data fr
     *   State management to resume from where it left off.
     *   Dedicated cleanup scripts for environment resets.
 
-## Prerequisites
+## Dependencies
+- Python 3.12+ (Matched to Databricks Serverless Runtime 17.3+)
+- `dlt[databricks,postgres,sql-database]>=1.18.2`
+- `uv` for dependency management
 
-*   Python 3.11+
-*   PostgreSQL database with logical replication enabled (`wal_level=logical`).
-*   Databricks workspace with Unity Catalog enabled.
+## Deployment to Databricks
 
-## Setup
+This project uses **Databricks Asset Bundles (DABs)** for deployment.
 
-1.  **Install Dependencies**:
-    ```bash
-    uv sync
-    ```
+### 1. Setup Secrets
+Before running the job, create the secret scope and connection string in Databricks:
 
-2.  **Configure Secrets**:
-    Create `.dlt/secrets.toml` with your credentials:
-    ```toml
-    [sources.pg_replication.credentials]
-    drivername = "postgresql"
-    database = "your_db"
-    username = "your_user"
-    password = "your_password"
-    host = "your_host"
-    port = 5432
-
-    [sources.pg_replication]
-    plugin_name = "pgoutput"
-    slot_name = "dlt_cdc_slot"
-    pub_name = "dlt_cdc_pub"
-
-    [destination.databricks.credentials]
-    server_hostname = "dbc-xxxx.cloud.databricks.com"
-    http_path = "/sql/1.0/warehouses/xxxx"
-    access_token = "dapi..."
-    catalog = "chinook_lakehouse"
-    ```
-
-    > **Note**: `dlt` automatically creates staging volumes (`_dlt_staging_load_volume`) in both the destination schema (`bronze`) and staging schema (`bronze_staging`) as needed for snapshot and CDC operations respectively.
-
-## Usage
-
-### 1. Initial Snapshot (Full Load)
-Run this once to backfill historical data.
 ```bash
-# Direct execution
-uv run full_load.py
+# Create scope
+databricks secrets create-scope dlt_scope
 
-# Or via orchestrator
-uv run pipeline_main.py --mode snapshot
+# Add Postgres connection string
+# Format: postgresql://user:password@host:port/database
+databricks secrets put-secret dlt_scope pg_connection_string --string-value "postgresql://..."
 ```
 
-### 2. Continuous CDC
-Run this to start streaming changes. It will run indefinitely until stopped.
-```bash
-# Direct execution
-uv run cdc_load.py
+### 2. Deploy
+Deploy the code as a wheel to your workspace:
 
-# Or via orchestrator
-uv run pipeline_main.py --mode cdc
+```bash
+databricks bundle deploy --profile DEFAULT
 ```
 
-### 3. Databricks Lakeflow Jobs
-When configuring Lakeflow Jobs (Workflows), use the orchestrator:
-```bash
-# Full Load Job
-uv run pipeline_main.py --mode snapshot
+### 3. Run
+Trigger the job manually or wait for the schedule:
 
-# CDC Job (continuous)
-uv run pipeline_main.py --mode cdc
+```bash
+databricks bundle run postgres_cdc_job_definition --profile DEFAULT
 ```
 
-### 4. Simulation (Optional)
-To verify CDC, you can simulate transactions in the source database:
-```bash
-# Generate 5 inserts, 2 updates, 1 delete
-uv run scripts/simulate_transactions.py 5 2 1
-```
-
-### 5. Cleanup (Reset Environment)
-**WARNING**: This deletes all tables in the target schema and files in the staging volume.
-```bash
-uv run scripts/cleanup_databricks.py
-```
-
-## Project Structure
+## Structure
 
 *   **`pipeline_main.py`**: Main orchestrator for Databricks Lakeflow Jobs (routes to full_load or cdc_load).
 *   **`full_load.py`**: Snapshot/initial load pipeline (replace mode).

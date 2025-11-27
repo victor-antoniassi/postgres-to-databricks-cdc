@@ -1,0 +1,50 @@
+# This is a Databricks asset bundle definition.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: postgres_to_databricks_cdc
+  uuid: 5d1e8c7c-4a3b-4e0f-9d2a-7b8f9e6a2c3d # UUID gerado aleatoriamente
+
+# Inclui os arquivos de configuração de jobs e pipelines.
+include:
+  - resources/jobs/*.job.yml
+
+# Define como o código Python é empacotado.
+# Para este projeto, vamos usar o formato de wheel, que é a abordagem recomendada
+# para empacotar código Python para execução em Jobs no Databricks.
+artifacts:
+  postgres_cdc_wheel:
+    type: whl
+    build: uv build --wheel # Usando uv build para criar o wheel
+
+# Variáveis que podem ser usadas nos jobs e pipelines.
+variables:
+  catalog:
+    description: The Unity Catalog to use for tables.
+  schema:
+    description: The schema within the Unity Catalog to use.
+
+targets:
+  dev:
+    # O target padrão usa 'mode: development' para criar uma cópia de desenvolvimento.
+    # - Recursos implantados são prefixados com '[dev seu_nome_de_usuario]'
+    # - Quaisquer agendamentos de jobs são pausados por padrão.
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-2b79b085-f261.cloud.databricks.com # Host do seu workspace
+    variables:
+      catalog: chinook_lakehouse # Seu catálogo encontrado no README
+      schema: bronze             # Seu schema padrão, ajustável conforme necessidade
+
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-2b79b085-f261.cloud.databricks.com # Host do seu workspace de produção
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target} # Caminho de deploy em prod
+    variables:
+      catalog: chinook_lakehouse
+      schema: bronze
+    # Permissões de exemplo para o ambiente de produção.
+    permissions:
+      - user_name: victor@antoniassi.xyz # Substituir pelo seu email ou de um Service Principal
+        level: CAN_MANAGE

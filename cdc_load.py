@@ -18,6 +18,7 @@ Configuration:
 
 import dlt
 import psycopg2
+import os  # Added os import
 from dlt.sources.credentials import ConnectionStringCredentials
 from rich.panel import Panel
 from rich.console import Console
@@ -28,21 +29,41 @@ from pg_replication import replication_resource
 from pg_replication.helpers import init_replication
 from utils.logger import setup_logger
 
+try:
+    from pyspark.sql import SparkSession
+except ImportError:
+    SparkSession = None
+
 logger = setup_logger(__name__)
 console = Console()
+
+
+def get_dbutils(spark):
+    try:
+        from pyspark.dbutils import DBUtils
+        return DBUtils(spark)
+    except ImportError:
+        return None
+
+def get_secret(scope, key):
+    """Get secret from Databricks dbutils or dlt secrets"""
+    # Try dbutils first (for Databricks environment)
+    if SparkSession:
+        try:
+            spark = SparkSession.builder.getOrCreate()
+            dbutils = get_dbutils(spark)
+            if dbutils:
+                return dbutils.secrets.get(scope=scope, key=key)
+        except Exception as e:
+            logger.debug(f"Could not get dbutils secret: {e}")
+    
+    # Fallback to dlt secrets (local or env vars)
+    return None
 
 
 def run_cdc_load():
     """
     Execute CDC load from PostgreSQL to Databricks.
-    
-    This function:
-    1. Creates a dlt pipeline targeting the 'bronze' schema in Databricks
-    2. Discovers all tables in PostgreSQL 'public' schema
-    3. Initializes replication slot and publication if not already created
-    4. Consumes changes from PostgreSQL WAL (Write-Ahead Log)
-    5. Applies changes using 'merge' write disposition
-    6. Uses parquet as the loader file format for efficiency
     """
     console.print(Panel.fit(
         "[bold blue]CDC LOAD PIPELINE[/bold blue]\n"
@@ -50,24 +71,45 @@ def run_cdc_load():
         border_style="blue"
     ))
     
+    # 1. Load Configuration and Secrets
+    # Try to get connection string from Databricks secrets first
+    pg_connection_string = get_secret("dlt_scope", "pg_connection_string")
+    
+    if pg_connection_string:
+        logger.info("Loaded credentials from Databricks secrets")
+        # Inject into environment so dlt config system can pick it up automatically
+        os.environ["SOURCES__PG_REPLICATION__CREDENTIALS__CONNECTION_STRING"] = pg_connection_string
+        os.environ["SOURCES__PG_REPLICATION__CREDENTIALS__DRIVERNAME"] = "postgresql"
+        
+        # Inject Databricks destination configuration
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__CATALOG"] = "chinook_lakehouse"
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__SERVER_HOSTNAME"] = "dbc-2b79b085-f261.cloud.databricks.com"
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__HTTP_PATH"] = "/sql/1.0/warehouses/981a241885c8c6df"
+    else:
+        logger.info("Attempting to load credentials from existing dlt secrets/env vars")
+
     # Configure the Pipeline
     pipeline = dlt.pipeline(
         pipeline_name="postgres_prod_to_databricks",
         destination="databricks",
-        dataset_name="bronze"  # Target Schema in Unity Catalog
+        dataset_name="bronze"
     )
     
-    # Get replication configuration from secrets
+    # Get replication configuration (will pick up from env vars or defaults)
     try:
-        slot_name = dlt.secrets.get("sources.pg_replication.slot_name", str)
+        slot_name = dlt.config.get("sources.pg_replication.slot_name", str) or "dlt_cdc_slot"
     except (KeyError, ValueError):
         slot_name = "dlt_cdc_slot"
     
     try:
-        pub_name = dlt.secrets.get("sources.pg_replication.pub_name", str)
+        pub_name = dlt.config.get("sources.pg_replication.pub_name", str) or "dlt_cdc_pub"
     except (KeyError, ValueError):
         pub_name = "dlt_cdc_pub"
-    
+        
+    # Ensure defaults are set in env if missing, for consistency
+    os.environ["SOURCES__PG_REPLICATION__SLOT_NAME"] = slot_name
+    os.environ["SOURCES__PG_REPLICATION__PUB_NAME"] = pub_name
+
     # Display CDC configuration
     config_table = Table(title="CDC Configuration", show_header=False, box=None)
     config_table.add_column("Property", style="cyan")
@@ -78,27 +120,36 @@ def run_cdc_load():
     config_table.add_row("Dataset", pipeline.dataset_name)
     console.print(config_table)
     
-    # Get credentials to discover tables
-    creds = dlt.secrets.get("sources.pg_replication.credentials", ConnectionStringCredentials)
-    
+    # Verify credentials explicitly for logging/discovery
+    # If we loaded from secrets (pg_connection_string is set), instantiate directly
+    if pg_connection_string:
+        creds = ConnectionStringCredentials(pg_connection_string)
+    else:
+        # Fallback: try to load from dlt secrets/env vars if not found above
+        creds = dlt.secrets.get("sources.pg_replication.credentials", ConnectionStringCredentials)
+
+    if not creds:
+         raise ValueError("Could not load PostgreSQL credentials. Check secrets or env vars.")
+
     # Connect and list tables from public schema
     logger.info("Discovering tables in PostgreSQL [cyan]'public'[/cyan] schema...")
     with psycopg2.connect(creds.to_native_representation()) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
-            # Filter out dlt internal tables (start with _dlt)
             tables = [row[0] for row in cur.fetchall() if not row[0].startswith("_dlt")]
     
     logger.info(f"Found [bold green]{len(tables)}[/bold green] table(s) to monitor")
     logger.debug(f"Tables: {', '.join(tables)}")
     
-    # Initialize replication (creates slot/publication if needed)
+    # Initialize replication
+    # We pass names explicitly but leave credentials to be picked up from env vars
     logger.info("Initializing replication slot and publication...")
     init_replication(
         slot_name=slot_name,
         pub_name=pub_name,
         schema_name="public",
-        table_names=tables
+        table_names=tables,
+        credentials=creds
     )
     logger.info("[bold green]✓[/bold green] Replication initialized successfully")
     
@@ -106,11 +157,11 @@ def run_cdc_load():
     logger.info("Starting CDC stream from PostgreSQL WAL...")
     cdc_source = replication_resource(
         slot_name=slot_name,
-        pub_name=pub_name
+        pub_name=pub_name,
+        credentials=creds
     )
     
     # Run the pipeline with merge disposition
-    # This ensures INSERT, UPDATE, DELETE operations are correctly applied
     info = pipeline.run(
         cdc_source,
         write_disposition="merge",
@@ -123,7 +174,6 @@ def run_cdc_load():
         border_style="green"
     ))
     
-    # Create summary table
     summary_table = Table(title="Pipeline Summary", show_header=True, header_style="bold cyan")
     summary_table.add_column("Property", style="cyan")
     summary_table.add_column("Value", style="yellow")

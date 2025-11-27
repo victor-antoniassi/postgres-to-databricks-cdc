@@ -1,0 +1,28 @@
+# Job definition for the PostgreSQL to Databricks CDC pipeline.
+
+resources:
+  jobs:
+    postgres_cdc_job_definition: # Nome do recurso do job, distinto do nome do job no Databricks
+      name: ${bundle.target}-postgres-cdc-pipeline # Nome do job no Databricks, prefixado pelo target
+
+      tasks:
+        - task_key: cdc_load_task
+          python_wheel_task:
+            package_name: postgres-to-databricks-cdc # Nome do seu pacote do pyproject.toml
+            entry_point: run_pipeline # Entry point from project.scripts in pyproject.toml
+            parameters:
+              - "--mode"
+              - "cdc"
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+            # O bundle automaticamente incluirá o wheel gerado do seu projeto (definido em artifacts no databricks.yml principal).
+            # Bibliotecas adicionais são especificadas aqui, além do wheel do projeto.
+            dependencies:
+              - "dlt[databricks,postgres,sql-database]>=1.18.2"
+              - "typing-extensions>=4.11.0"
+              - "rich>=13.7.0"
+              - ../../dist/*.whl
