@@ -45,7 +45,6 @@ Thumbs.db
 
 # LLM / AI Memory
 .gemini
-.claude
 
 # Project specific ignored scripts
 scripts/simulate_transactions.py
