@@ -13,6 +13,7 @@ Environment Variables:
 """
 
 import dlt
+import os
 from dlt.sources.sql_database import sql_database
 import psycopg2
 from dlt.sources.credentials import ConnectionStringCredentials
@@ -22,8 +23,36 @@ from rich.table import Table
 
 from utils.logger import setup_logger
 
+try:
+    from pyspark.sql import SparkSession
+except ImportError:
+    SparkSession = None
+
 logger = setup_logger(__name__)
 console = Console()
+
+
+def get_dbutils(spark):
+    try:
+        from pyspark.dbutils import DBUtils
+        return DBUtils(spark)
+    except ImportError:
+        return None
+
+def get_secret(scope, key):
+    """Get secret from Databricks dbutils or dlt secrets"""
+    # Try dbutils first (for Databricks environment)
+    if SparkSession:
+        try:
+            spark = SparkSession.builder.getOrCreate()
+            dbutils = get_dbutils(spark)
+            if dbutils:
+                return dbutils.secrets.get(scope=scope, key=key)
+        except Exception as e:
+            logger.debug(f"Could not get dbutils secret: {e}")
+    
+    # Fallback to dlt secrets (local or env vars)
+    return None
 
 
 def run_full_load():
@@ -43,6 +72,23 @@ def run_full_load():
         border_style="yellow"
     ))
     
+    # 1. Load Configuration and Secrets
+    # Try to get connection string from Databricks secrets first
+    pg_connection_string = get_secret("dlt_scope", "pg_connection_string")
+    
+    if pg_connection_string:
+        logger.info("Loaded credentials from Databricks secrets")
+        # Inject into environment so dlt config system can pick it up automatically
+        os.environ["SOURCES__PG_REPLICATION__CREDENTIALS__CONNECTION_STRING"] = pg_connection_string
+        os.environ["SOURCES__PG_REPLICATION__CREDENTIALS__DRIVERNAME"] = "postgresql"
+        
+        # Inject Databricks destination configuration
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__CATALOG"] = "chinook_lakehouse"
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__SERVER_HOSTNAME"] = "dbc-2b79b085-f261.cloud.databricks.com"
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__HTTP_PATH"] = "/sql/1.0/warehouses/981a241885c8c6df"
+    else:
+        logger.info("Attempting to load credentials from existing dlt secrets/env vars")
+
     # Configure the Pipeline
     pipeline = dlt.pipeline(
         pipeline_name="postgres_prod_to_databricks",
@@ -55,8 +101,14 @@ def run_full_load():
     logger.info(f"Dataset: [cyan]{pipeline.dataset_name}[/cyan]")
     
     # Get credentials to discover tables
-    creds = dlt.secrets.get("sources.pg_replication.credentials", ConnectionStringCredentials)
+    if pg_connection_string:
+        creds = ConnectionStringCredentials(pg_connection_string)
+    else:
+        creds = dlt.secrets.get("sources.pg_replication.credentials", ConnectionStringCredentials)
     
+    if not creds:
+         raise ValueError("Could not load PostgreSQL credentials. Check secrets or env vars.")
+
     # Connect and list tables from public schema
     logger.info("Discovering tables in PostgreSQL [cyan]'public'[/cyan] schema...")
     with psycopg2.connect(creds.to_native_representation()) as conn:
@@ -71,7 +123,7 @@ def run_full_load():
     logger.info("Starting full snapshot load with [bold red]REPLACE[/bold red] disposition...")
     logger.warning("This will [bold red]DELETE[/bold red] all existing data in bronze schema tables!")
     
-    snapshot_source = sql_database()
+    snapshot_source = sql_database(credentials=creds)
     
     # Run the pipeline with replace disposition
     info = pipeline.run(

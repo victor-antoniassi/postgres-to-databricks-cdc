@@ -29,6 +29,24 @@ from rich.console import Console
 
 from utils.logger import setup_logger
 
+# Databricks specific workaround:
+# Issue: Databricks Serverless pre-loads internal dlt (Delta Live Tables) modules
+# which conflict with the dlt library (dlthub).
+# Fix: Patch sys.meta_path and sys.modules before importing dlt to remove
+# Databricks' internal hooks.
+import types
+
+# 1. Drop Databricks' post-import hook
+sys.meta_path = [h for h in sys.meta_path if 'PostImportHook' not in repr(h)]
+
+# 2. Purge half-initialized Delta-Live-Tables modules
+for name, module in list(sys.modules.items()):
+    if not isinstance(module, types.ModuleType):
+        continue
+    module_file = getattr(module, '__file__', '') or ''
+    if module_file.startswith('/databricks/spark/python/dlt'):
+        del sys.modules[name]
+
 logger = setup_logger(__name__)
 console = Console()
 
