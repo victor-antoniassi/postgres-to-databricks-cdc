@@ -15,7 +15,7 @@ build
 .env
 .python-version
 
-# Dependency management lock file (for applications, typically committed, but ignored if preferred)
+# Dependency management lock file
 uv.lock
 
 # Databricks Asset Bundle generated files
@@ -43,9 +43,10 @@ Thumbs.db
 .pytest_cache
 .coverage
 
-# LLM / AI Memory (MUST BE IGNORED)
+# LLM / AI Memory
 .gemini
 .claude
 
 # Project specific ignored scripts
 scripts/simulate_transactions.py
+
