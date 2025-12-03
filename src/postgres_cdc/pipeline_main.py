@@ -7,16 +7,16 @@ full_load or cdc_load based on the mode parameter.
 
 Usage:
     # Full snapshot load
-    uv run pipeline_main.py --mode snapshot
+    uv run pipeline_main.py --mode full_load
     
     # CDC incremental load
     uv run pipeline_main.py --mode cdc
     
     # Via Lakeflow Jobs (pass as parameter)
-    PIPELINE_MODE=snapshot uv run pipeline_main.py
+    PIPELINE_MODE=full_load uv run pipeline_main.py
     
 Environment Variables:
-    PIPELINE_MODE: Either 'snapshot' or 'cdc' (required if --mode not provided)
+    PIPELINE_MODE: Either 'full_load' or 'cdc' (required if --mode not provided)
     LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR) - defaults to INFO
     All credentials are loaded from .dlt/secrets.toml
 """
@@ -24,17 +24,15 @@ Environment Variables:
 import sys
 import os
 import argparse
+import types
 from rich.panel import Panel
 from rich.console import Console
-
-from utils.logger import setup_logger
 
 # Databricks specific workaround:
 # Issue: Databricks Serverless pre-loads internal dlt (Delta Live Tables) modules
 # which conflict with the dlt library (dlthub).
 # Fix: Patch sys.meta_path and sys.modules before importing dlt to remove
 # Databricks' internal hooks.
-import types
 
 # 1. Drop Databricks' post-import hook
 sys.meta_path = [h for h in sys.meta_path if 'PostImportHook' not in repr(h)]
@@ -46,6 +44,11 @@ for name, module in list(sys.modules.items()):
     module_file = getattr(module, '__file__', '') or ''
     if module_file.startswith('/databricks/spark/python/dlt'):
         del sys.modules[name]
+
+# Package Imports
+from .utils.logger import setup_logger
+from .full_load import run_full_load
+from .cdc_load import run_cdc_load
 
 logger = setup_logger(__name__)
 console = Console()
@@ -97,12 +100,10 @@ def main():
     # Route to appropriate pipeline module
     if mode == "full_load":
         logger.info("Routing to [bold green]FULL LOAD[/bold green] pipeline...")
-        from full_load import run_full_load
         run_full_load()
     
     elif mode == "cdc":
         logger.info("Routing to [bold blue]CDC LOAD[/bold blue] pipeline...")
-        from cdc_load import run_cdc_load
         run_cdc_load()
     
     console.print(Panel.fit(
@@ -113,4 +114,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -75,7 +75,7 @@ access_token = "dapi..." # Or use CLI profile if configured
 Perform the initial full load of your data.
 
 ```bash
-uv run full_load.py
+uv run run_pipeline --mode full_load
 ```
 
 ### 4. Simulate Transactions (Optional)
@@ -90,7 +90,7 @@ uv run scripts/simulate_transactions.py 5 2 1
 Capture the changes and merge them into Databricks.
 
 ```bash
-uv run cdc_load.py
+uv run run_pipeline --mode cdc
 ```
 
 ## ☁️ Deployment to Databricks (Production)
@@ -131,13 +131,19 @@ databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --pro
 
 ```
 .
-├── pipeline_main.py           # Entry point for Databricks Jobs
-├── full_load.py               # Logic for Full Load Mode
-├── cdc_load.py                # Logic for CDC Mode
-├── pg_replication/            # Custom dlt source for Postgres Logical Replication
-├── scripts/                   # Helper tools
-│   ├── cleanup_databricks.py  # Resets the environment (Drops tables/schemas)
-│   └── simulate_transactions.py # Generates test data
+├── pyproject.toml             # Project definition and build config
+├── databricks.yml             # Databricks bundle config
+├── src/
+│   └── postgres_cdc/         # Main package
+│       ├── __init__.py
+│       ├── pipeline_main.py   # Main orchestrator (entry point)
+│       ├── full_load.py       # Full Load pipeline logic
+│       ├── cdc_load.py        # CDC incremental pipeline logic
+│       ├── utils/             # Utility modules (logger)
+│       └── pg_replication/    # Custom CDC source module
+├── scripts/                   # Helper tools (outside package)
+│   ├── cleanup_databricks.py
+│   └── simulate_transactions.py
 ├── resources/                 # Databricks Job Definitions (YAML)
 └── .dlt/                      # Local config and secrets
 ```

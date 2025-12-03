@@ -24,9 +24,9 @@ from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
 
-from pg_replication import replication_resource
-from pg_replication.helpers import init_replication
-from utils.logger import setup_logger
+from .pg_replication import replication_resource
+from .pg_replication.helpers import init_replication
+from .utils.logger import setup_logger
 
 try:
     from pyspark.sql import SparkSession

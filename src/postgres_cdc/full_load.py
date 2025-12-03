@@ -21,7 +21,7 @@ from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
 
-from utils.logger import setup_logger
+from .utils.logger import setup_logger
 
 try:
     from pyspark.sql import SparkSession
