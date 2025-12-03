@@ -81,6 +81,8 @@ uv run run_pipeline --mode full_load
 ### 4. Simulate Transactions (Optional)
 Generate some fake sales data in your Postgres database to test CDC.
 
+> **Requirement:** This script wraps an external generator. You must clone [day-1_sales_data_generator](https://github.com/victor-antoniassi/day-1_sales_data_generator) locally for it to work.
+
 ```bash
 # Generate 5 inserts, 2 updates, 1 delete
 uv run scripts/simulate_transactions.py 5 2 1
@@ -91,6 +93,13 @@ Capture the changes and merge them into Databricks.
 
 ```bash
 uv run run_pipeline --mode cdc
+```
+
+### 6. Verify Data
+Validate that inserts, updates, and deletes were correctly applied to the Delta tables.
+
+```bash
+uv run scripts/verify_data.py
 ```
 
 ## ☁️ Deployment to Databricks (Production)
@@ -143,7 +152,9 @@ databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --pro
 │       └── pg_replication/    # Custom CDC source module
 ├── scripts/                   # Helper tools (outside package)
 │   ├── cleanup_databricks.py
-│   └── simulate_transactions.py
+│   ├── simulate_transactions.py
+│   ├── verify_data.py        # Verifies CDC data consistency
+│   └── inspect_table.py      # Inspects table schema and control columns
 ├── resources/                 # Databricks Job Definitions (YAML)
 └── .dlt/                      # Local config and secrets
 ```
