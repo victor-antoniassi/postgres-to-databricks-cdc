@@ -1,7 +1,7 @@
 """
-Full Load Pipeline - Snapshot Operations
+Full Load Pipeline
 
-This module handles snapshot/initial load operations from PostgreSQL to Databricks.
+This module handles full load operations from PostgreSQL to Databricks.
 Uses the standard SQL database source to perform complete table replication.
 
 Usage:
@@ -57,7 +57,7 @@ def get_secret(scope, key):
 
 def run_full_load():
     """
-    Execute full snapshot load from PostgreSQL to Databricks.
+    Execute full load from PostgreSQL to Databricks.
     
     This function:
     1. Creates a dlt pipeline targeting the 'bronze' schema in Databricks
@@ -68,7 +68,7 @@ def run_full_load():
     """
     console.print(Panel.fit(
         "[bold yellow]FULL LOAD PIPELINE[/bold yellow]\n"
-        "[italic]Snapshot Mode - Replace Disposition[/italic]",
+        "[italic]Mode: Full Load - Replace Disposition[/italic]",
         border_style="yellow"
     ))
     
@@ -120,14 +120,14 @@ def run_full_load():
     logger.debug(f"Tables: {', '.join(tables)}")
     
     # Create SQL database source
-    logger.info("Starting full snapshot load with [bold red]REPLACE[/bold red] disposition...")
+    logger.info("Starting full load with [bold red]REPLACE[/bold red] disposition...")
     logger.warning("This will [bold red]DELETE[/bold red] all existing data in bronze schema tables!")
     
-    snapshot_source = sql_database(credentials=creds)
+    full_load_source = sql_database(credentials=creds)
     
     # Run the pipeline with replace disposition
     info = pipeline.run(
-        snapshot_source,
+        full_load_source,
         write_disposition="replace",
         loader_file_format="parquet"
     )
@@ -155,4 +155,3 @@ def run_full_load():
 
 if __name__ == "__main__":
     run_full_load()
-

@@ -8,7 +8,7 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
 
 *   **Real-Time Replication**: Streams `INSERT`, `UPDATE`, and `DELETE` operations continuously using PostgreSQL logical replication (`pgoutput`).
 *   **Dual-Mode Operation**:
-    *   **Snapshot Mode**: High-performance initial load of historical data.
+    *   **Full Load Mode**: High-performance initial load of historical data.
     *   **CDC Mode**: Low-latency incremental updates with exactly-once processing.
 *   **Databricks Native**:
     *   Leverages Unity Catalog Volumes for efficient staging.
@@ -25,14 +25,16 @@ The pipeline operates in two mutually exclusive modes to ensure reliability and 
 ```mermaid
 graph LR
     PG[(PostgreSQL)] -->|WAL / pgoutput| CDC[CDC Pipeline]
-    PG -->|SELECT *| Snapshot[Snapshot Pipeline]
+    PG -->|SELECT *| FullLoad[Full Load Pipeline]
     
     CDC -->|Parquet| VolCDC[Staging Volume]
-    Snapshot -->|Parquet| VolSnap[Staging Volume]
+    FullLoad -->|Parquet| VolSnap[Staging Volume]
     
     VolCDC -->|MERGE| Delta[(Databricks Delta Lake)]
-    VolSnap -->|REPLACE| Delta
+    FullLoad -->|REPLACE| Delta
 ```
+
+> **Note regarding Terminology:** This documentation uses the term **Full Load** to describe the initial bulk load of data. Internally, this utilizes `dlt`'s `write_disposition="replace"` strategy. While `dlt` internally handles some state using "snapshots" (especially for logical replication), we strictly use "Full Load" to describe the user-facing operation of replacing the destination dataset with the source state.
 
 ## 🛠️ Prerequisites
 
@@ -69,7 +71,7 @@ access_token = "dapi..." # Or use CLI profile if configured
 
 > **Tip:** If you have the Databricks CLI configured, `dlt` can automatically use your `DEFAULT` profile credentials without putting them in `secrets.toml`.
 
-### 3. Run Snapshot Load (Initialize)
+### 3. Run Full Load (Initialize)
 Perform the initial full load of your data.
 
 ```bash
@@ -115,12 +117,12 @@ Trigger the pipeline modes using parameters:
 
 **Full Load Job:**
 ```bash
-databricks bundle run postgres_cdc_job_definition --python-params "--mode,snapshot" --profile DEFAULT
+databricks bundle run postgres_cdc_job_definition --task-key full_load_task --profile DEFAULT
 ```
 
 **CDC Stream Job:**
 ```bash
-databricks bundle run postgres_cdc_job_definition --python-params "--mode,cdc" --profile DEFAULT
+databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --profile DEFAULT
 ```
 
 > **Note on Serverless:** If using Databricks Serverless, ensure your Network Policies allow egress to `us-east-2.storage.cloud.databricks.com` (or your region's storage endpoint), otherwise the job may fail with `Connection refused`.
@@ -130,7 +132,7 @@ databricks bundle run postgres_cdc_job_definition --python-params "--mode,cdc" -
 ```
 .
 ├── pipeline_main.py           # Entry point for Databricks Jobs
-├── full_load.py               # Logic for Snapshot Mode
+├── full_load.py               # Logic for Full Load Mode
 ├── cdc_load.py                # Logic for CDC Mode
 ├── pg_replication/            # Custom dlt source for Postgres Logical Replication
 ├── scripts/                   # Helper tools

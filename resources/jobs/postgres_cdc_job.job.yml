@@ -6,10 +6,18 @@ resources:
       name: ${bundle.target}-postgres-cdc-pipeline
 
       tasks:
+        - task_key: full_load_task
+          python_wheel_task:
+            package_name: postgres-to-databricks-cdc
+            entry_point: run_pipeline
+            parameters: ["--mode", "full_load"]
+          environment_key: default
+
         - task_key: cdc_load_task
           python_wheel_task:
             package_name: postgres-to-databricks-cdc
             entry_point: run_pipeline
+            parameters: ["--mode", "cdc"]
           environment_key: default
 
       environments:

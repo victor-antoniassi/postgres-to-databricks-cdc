@@ -63,8 +63,8 @@ def main():
     )
     parser.add_argument(
         "--mode",
-        choices=["snapshot", "cdc"],
-        help="Pipeline mode: 'snapshot' for full load or 'cdc' for incremental CDC"
+        choices=["full_load", "cdc"],
+        help="Pipeline mode: 'full_load' for initial load or 'cdc' for incremental CDC"
     )
     
     args = parser.parse_args()
@@ -75,16 +75,16 @@ def main():
     if not mode:
         logger.error("Pipeline mode must be specified!")
         logger.info("Usage:")
-        logger.info("  uv run pipeline_main.py --mode snapshot")
+        logger.info("  uv run pipeline_main.py --mode full_load")
         logger.info("  uv run pipeline_main.py --mode cdc")
         logger.info("")
         logger.info("Or via environment variable:")
-        logger.info("  PIPELINE_MODE=snapshot uv run pipeline_main.py")
+        logger.info("  PIPELINE_MODE=full_load uv run pipeline_main.py")
         logger.info("  PIPELINE_MODE=cdc uv run pipeline_main.py")
         sys.exit(1)
     
-    if mode not in ["snapshot", "cdc"]:
-        logger.error(f"Invalid mode '{mode}'. Must be 'snapshot' or 'cdc'.")
+    if mode not in ["full_load", "cdc"]:
+        logger.error(f"Invalid mode '{mode}'. Must be 'full_load' or 'cdc'.")
         sys.exit(1)
     
     # Display pipeline header
@@ -95,7 +95,7 @@ def main():
     ))
     
     # Route to appropriate pipeline module
-    if mode == "snapshot":
+    if mode == "full_load":
         logger.info("Routing to [bold green]FULL LOAD[/bold green] pipeline...")
         from full_load import run_full_load
         run_full_load()
