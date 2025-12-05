@@ -23,15 +23,36 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
 The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns:
 
 ```mermaid
-graph LR
-    PG[(PostgreSQL)] -->|WAL / pgoutput| CDC[CDC Pipeline]
-    PG -->|SELECT *| FullLoad[Full Load Pipeline]
+flowchart LR
+    subgraph Source [Source System]
+        PG[(PostgreSQL)]
+    end
+
+    subgraph Pipeline [dlt Orchestrator]
+        direction TB
+        FullLoad[Full Load Mode]
+        CDC[CDC Mode]
+    end
     
-    CDC -->|Parquet| VolCDC[Staging Volume]
-    FullLoad -->|Parquet| VolSnap[Staging Volume]
+    subgraph Target [Databricks Unity Catalog]
+        Volume[Staging Volume]
+        Delta[(Delta Table)]
+    end
+
+    %% Data Flow
+    PG -->|Snapshot| FullLoad
+    PG -->|WAL Stream| CDC
     
-    VolCDC -->|MERGE| Delta[(Databricks Delta Lake)]
-    FullLoad -->|REPLACE| Delta
+    FullLoad -->|Parquet| Volume
+    CDC -->|Parquet| Volume
+    
+    Volume -->|REPLACE| Delta
+    Volume -->|MERGE| Delta
+    
+    %% Styling
+    style Source fill:#f9f,stroke:#333,stroke-width:2px
+    style Target fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Delta fill:#0277bd,stroke:#fff,color:#fff
 ```
 
 > **Note regarding Terminology:** This documentation uses the term **Full Load** to describe the initial bulk load of data. Internally, this utilizes `dlt`'s `write_disposition="replace"` strategy. While `dlt` internally handles some state using "snapshots" (especially for logical replication), we strictly use "Full Load" to describe the user-facing operation of replacing the destination dataset with the source state.
