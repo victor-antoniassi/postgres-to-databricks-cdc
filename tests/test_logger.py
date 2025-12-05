@@ -1,7 +1,7 @@
 import os
 import logging
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from postgres_cdc.utils.logger import setup_logger, get_logger
 from rich.logging import RichHandler
 
