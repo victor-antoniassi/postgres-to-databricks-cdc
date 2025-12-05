@@ -164,3 +164,5 @@ MIT
 <!-- CI Trigger Test -->
  
 <!-- Service Principal CI/CD Test -->
+ 
+<!-- Catalog update trigger -->
