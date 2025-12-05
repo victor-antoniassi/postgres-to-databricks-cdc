@@ -18,23 +18,13 @@ Usage:
 import sys
 import os
 import subprocess
-from pathlib import Path
 from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
 
 # Add parent directory to path to import utils
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import argparse
-import random
-import time
-from datetime import datetime
-from rich.console import Console
-from rich.panel import Panel
 
-import dlt
-from dlt.sources.credentials import ConnectionStringCredentials
-import psycopg2
 
 # Updated import to point to the installed package
 from postgres_cdc.utils.logger import setup_logger
@@ -126,7 +116,7 @@ def run_external_simulation(inserts: int = 10, updates: int = 2, deletes: int = 
         logger.info("\n[yellow]Troubleshooting tips:[/yellow]")
         logger.info(f"  • Ensure '{CHINOOK_DB_PROJECT_PATH}main.py' exists and is executable")
         logger.info(f"  • Check if 'uv' is installed in '{CHINOOK_DB_PROJECT_PATH}'")
-        logger.info(f"  • Verify the external script's dependencies are installed")
+        logger.info("  • Verify the external script's dependencies are installed")
         
     except FileNotFoundError:
         logger.error("✗ 'uv' command not found. Ensure uv is installed and in your PATH")

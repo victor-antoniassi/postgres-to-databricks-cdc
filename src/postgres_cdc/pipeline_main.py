@@ -46,9 +46,9 @@ for name, module in list(sys.modules.items()):
         del sys.modules[name]
 
 # Package Imports
-from .utils.logger import setup_logger
-from .full_load import run_full_load
-from .cdc_load import run_cdc_load
+from .utils.logger import setup_logger  # noqa: E402
+from .full_load import run_full_load    # noqa: E402
+from .cdc_load import run_cdc_load      # noqa: E402
 
 logger = setup_logger(__name__)
 console = Console()

@@ -15,7 +15,6 @@ Environment Variables:
 import os
 import sys
 import dlt
-from databricks.sdk import WorkspaceClient
 from databricks.sql import connect
 from rich.panel import Panel
 from rich.console import Console
@@ -114,7 +113,7 @@ def cleanup():
         cmd = ["databricks", "fs", "rm", "-r", volume_path]
         logger.debug(f"Running command: {' '.join(cmd)}")
         subprocess.run(cmd, env=env, check=True, capture_output=True, text=True)
-        logger.info(f"[green]✓[/green] Volume cleaned successfully")
+        logger.info("[green]✓[/green] Volume cleaned successfully")
         
     except subprocess.CalledProcessError as e:
         logger.warning(f"Could not clean volume {volume_path}: {e.stderr}")
