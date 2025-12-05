@@ -32,8 +32,8 @@ targets:
     workspace:
       host: https://dbc-2b79b085-f261.cloud.databricks.com
     variables:
-      catalog: chinook_lakehouse
-      schema: bronze_dev
+      catalog: dev_chinook_lakehouse
+      schema: bronze
 
   qa:
     # QA target mimics production but writes to a separate schema
@@ -42,8 +42,8 @@ targets:
       host: https://dbc-2b79b085-f261.cloud.databricks.com
       root_path: /Shared/qa/${bundle.name}
     variables:
-      catalog: chinook_lakehouse
-      schema: bronze_qa
+      catalog: qa_chinook_lakehouse
+      schema: bronze
 
   prod:
     mode: production
@@ -51,7 +51,7 @@ targets:
       host: https://dbc-2b79b085-f261.cloud.databricks.com
       root_path: /Shared/prod/${bundle.name}
     variables:
-      catalog: chinook_lakehouse
+      catalog: prod_chinook_lakehouse
       schema: bronze
     # Example permissions for the production environment.
     permissions:
