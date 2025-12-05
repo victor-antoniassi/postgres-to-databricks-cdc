@@ -6,9 +6,16 @@
 ![Type Checker](https://img.shields.io/badge/type%20checker-mypy-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A production-grade data ingestion pipeline that replicates data from **PostgreSQL** (e.g., Neon, RDS) to **Databricks** (Delta Lake) using **Change Data Capture (CDC)**.
+A high-performance **Data Ingestion Project** built with the **Python dlt library**. It is designed to **move data from PostgreSQL to Databricks** using **CDC** (Change Data Capture) for efficient synchronization.
 
-Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestration with **Databricks Lakeflow Jobs**.
+Orchestrated natively by **Databricks Lakeflow Jobs**, this project serves as a robust blueprint for enterprise data replication.
+
+## 🎯 Project Scope: Ingestion (EL)
+
+This project focuses strictly on the **Extract & Load (EL)** phases of modern data engineering. Its primary goal is to establish a reliable **Bronze Layer (Raw Data)** in the Lakehouse.
+
+*   **Role**: Ingestion Engine (Source to Bronze).
+*   **Architecture Philosophy**: Decouples **Ingestion** from **Transformation**. By isolating the ingestion logic, we ensure that upstream failures do not break downstream business logic (Silver/Gold transformations), which can be handled separately by tools like dbt or Spark SQL.
 
 ## 🛠️ Tech Stack
 
@@ -19,10 +26,10 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
 
 ## 🚀 Features
 
-*   **Real-Time Replication**: Streams `INSERT`, `UPDATE`, and `DELETE` operations continuously using PostgreSQL logical replication (`pgoutput`).
+*   **Near Real-Time Replication**: Streams `INSERT`, `UPDATE`, and `DELETE` operations continuously using PostgreSQL logical replication (`pgoutput`) with low latency.
 *   **Dual-Mode Operation**:
     *   **Full Load Mode**: High-performance initial load of historical data.
-    *   **CDC Mode**: Low-latency incremental updates with exactly-once processing.
+    *   **CDC Mode**: Incremental updates with exactly-once processing semantics.
 *   **Databricks Native**:
     *   Leverages Unity Catalog Volumes for efficient staging.
     *   Writes directly to Delta Tables with schema evolution.
@@ -30,6 +37,15 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
     *   **Service Principal Authentication**: Secure OAuth M2M authentication for deployments.
     *   **Environment Isolation**: Strict separation of concerns with dedicated catalogs (`dev_`, `qa_`, `prod_`).
     *   **Automated Quality Gates**: Integrated Linting (Ruff), Type Checking (Mypy), and Unit Testing (Pytest).
+
+## ⏱️ Scheduling & Triggers
+
+The current Databricks Job definition is configured with **Manual Triggers** by default.
+
+*   **Why?** Designed for **On-Demand Demonstration**. This allows reviewers to trigger execution immediately and verify results without waiting for scheduled windows or consuming idle compute resources in the demo environment.
+*   **Production Recommendation:**
+    *   **Hourly (1 hour):** Ideal balance for batching accumulated CDC data.
+    *   **Continuous:** For low-latency requirements, switching the job to "Continuous" mode enables stream-like processing.
 
 ## 🏗️ Architecture
 
