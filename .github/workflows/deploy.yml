@@ -42,7 +42,7 @@ jobs:
   # Deploy to QA: Runs automatically when code is merged to 'main'
   deploy-qa:
     needs: ci-validation
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Temporarily removed for testing
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -60,7 +60,7 @@ jobs:
   # Deploy to PROD: Runs only when a Release is created
   deploy-prod:
     needs: ci-validation
-    # if: github.event_name == 'release' # Temporarily removed for testing
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
