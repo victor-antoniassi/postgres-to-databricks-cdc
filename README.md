@@ -187,7 +187,16 @@ Deployments are managed via **Databricks Asset Bundles (DABs)**.
 
 For production and QA, the pipeline is deployed automatically via CI/CD. For manual deployments or testing:
 
-### 1. Setup Secrets in Databricks
+### 1. Setup Infrastructure (Catalogs)
+Because this project simulates isolated environments using Unity Catalog, you must provision the catalogs manually before the first deployment:
+
+```bash
+databricks catalogs create dev_chinook_lakehouse
+databricks catalogs create qa_chinook_lakehouse
+databricks catalogs create prod_chinook_lakehouse
+```
+
+### 2. Setup Secrets in Databricks
 The job uses Databricks Secrets to securely access the database.
 
 ```bash
@@ -195,14 +204,14 @@ databricks secrets create-scope dlt_scope
 databricks secrets put-secret dlt_scope pg_connection_string --string-value "postgresql://user:pass@host:port/db"
 ```
 
-### 2. Deploy Bundle (Manual / Dev)
+### 3. Deploy Bundle (Manual / Dev)
 Builds the Python wheel and uploads the job definition to your development environment.
 
 ```bash
 databricks bundle deploy -t dev --profile DEFAULT
 ```
 
-### 3. Run Jobs
+### 4. Run Jobs
 Trigger the pipeline modes using parameters:
 
 **Full Load Job:**
