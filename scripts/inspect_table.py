@@ -92,8 +92,10 @@ def inspect():
             logger.info("\nFetching sample row with control columns...")
             # Construct query selecting known control columns explicitly if they verify existing
             cols_to_select = ["invoice_id", "_dlt_load_id", "_dlt_id"]
-            if "lsn" in dlt_cols: cols_to_select.append("lsn")
-            if "deleted_ts" in dlt_cols: cols_to_select.append("deleted_ts")
+            if "lsn" in dlt_cols:
+                cols_to_select.append("lsn")
+            if "deleted_ts" in dlt_cols:
+                cols_to_select.append("deleted_ts")
             
             query = f"SELECT {', '.join(cols_to_select)} FROM {target_table} LIMIT 1"
             

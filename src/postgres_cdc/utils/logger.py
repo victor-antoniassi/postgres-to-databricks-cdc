@@ -18,7 +18,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 
 
-def setup_logger(name: str, level: str = None) -> logging.Logger:
+def setup_logger(name: str, level: str | None = None) -> logging.Logger:
     """
     Configure and return a logger with rich console formatting.
     
