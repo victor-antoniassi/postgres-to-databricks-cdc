@@ -20,10 +20,10 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
 
 ## 🏗️ Architecture
 
-The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns. It utilizes a **Staging Schema Pattern** automatically managed by `dlt`.
+The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns. It leverages Databricks Unity Catalog for data governance and utilizes **Volumes for intermediate data staging**.
 
 *   **Destination Schema** (e.g., `bronze`): Holds the final, queryable Delta Tables.
-*   **Staging Schema** (e.g., `bronze_staging`): Auto-created by `dlt` to handle temporary tables and volumes required for atomic `MERGE` operations during CDC.
+*   **Staging Schema Pattern** (e.g., `bronze_staging`): During **CDC (`MERGE`) operations**, `dlt` automatically creates and manages a separate schema suffixed with `_staging` (e.g., `bronze_staging`). This schema holds temporary tables and volumes for atomic merge transactions. For **Full Load (`REPLACE`) operations**, staging predominantly occurs directly within volumes associated with the final `bronze` schema.
 
 ```mermaid
 flowchart LR
@@ -38,33 +38,24 @@ flowchart LR
     end
     
     subgraph Target [Databricks Unity Catalog]
-        subgraph StagingSchema [bronze_staging]
-            VolStaging[Staging Volume]
-            TabStaging[Staging Tables]
-        end
-        
-        subgraph FinalSchema [bronze]
-            Delta[(Final Delta Table)]
-        end
+        Volume[Staging Volume]
+        Delta[(Delta Table)]
     end
 
     %% Data Flow
     PG -->|Snapshot| FullLoad
     PG -->|WAL Stream| CDC
     
-    FullLoad -->|Parquet| VolStaging
-    CDC -->|Parquet| VolStaging
+    FullLoad -->|Parquet to Volume| Volume
+    CDC -->|Parquet to Volume| Volume
     
-    VolStaging -->|COPY| TabStaging
-    TabStaging -->|MERGE| Delta
-    TabStaging -->|REPLACE| Delta
+    Volume -- REPLACE (Full Load) --> Delta
+    Volume -- MERGE (CDC) --> Delta
     
     %% Styling
     style Source fill:#f9f,stroke:#333,stroke-width:2px
     style Target fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style Delta fill:#0277bd,stroke:#fff,color:#fff
-    style StagingSchema fill:#fff9c4,stroke:#fbc02d,stroke-dasharray: 5 5
-    style FinalSchema fill:#b3e5fc,stroke:#0288d1
 ```
 
 > **Note regarding Terminology:** This documentation uses the term **Full Load** to describe the initial bulk load of data. Internally, this utilizes `dlt`'s `write_disposition="replace"` strategy. While `dlt` internally handles some state using "snapshots" (especially for logical replication), we strictly use "Full Load" to describe the user-facing operation of replacing the destination dataset with the source state.
