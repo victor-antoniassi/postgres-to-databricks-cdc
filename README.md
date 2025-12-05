@@ -97,10 +97,6 @@ flowchart LR
 *   **Databricks Workspace** (Unity Catalog enabled)
 *   **PostgreSQL Database** with `wal_level=logical`
 
-> **🐳 Docker Tip:** Don't have a Postgres instance handy? Spin one up in seconds:
-> ```bash
-> docker run -d --name postgres-cdc -e POSTGRES_PASSWORD=postgres -p 5432:5432 -c wal_level=logical postgres:15
-> ```
 
 ## ⚡ Quick Start (Local Execution)
 
