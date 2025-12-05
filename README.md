@@ -138,7 +138,9 @@ Every Push and Pull Request triggers a strict validation pipeline:
     *   **Coverage**: Enforces minimum code coverage metrics (configured in `pyproject.toml`).
 
 ### Environment Strategy
-Deployments are managed via **Databricks Asset Bundles (DABs)** targeting three isolated environments in Unity Catalog:
+Deployments are managed via **Databricks Asset Bundles (DABs)**.
+
+> **Architecture Note:** This project implements a **Logical Isolation Strategy**. Instead of using separate Databricks Workspaces for Dev/QA/Prod (which is common in large enterprises for physical isolation), we simulate these environments within a **Single Workspace** using distinct **Unity Catalog Catalogs**. This provides strong data separation while keeping infrastructure lean.
 
 | Environment | Catalog | Trigger | Authentication |
 | :--- | :--- | :--- | :--- |
