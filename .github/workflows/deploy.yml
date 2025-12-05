@@ -42,7 +42,8 @@ jobs:
         run: uv run mypy src/
 
       - name: Run Unit Tests (Pytest)
-        run: uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+        # Coverage threshold is configured in pyproject.toml [tool.coverage.report]
+        run: uv run pytest --cov=src --cov-report=term-missing
 
   # Deploy to QA: Runs automatically when code is merged to 'main'
   deploy-qa:

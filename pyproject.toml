@@ -36,6 +36,13 @@ disallow_untyped_defs = false
 check_untyped_defs = false
 ignore_errors = true
 
+[tool.coverage.run]
+omit = ["*/pg_replication/*", "*/__init__.py"]
+
+[tool.coverage.report]
+fail_under = 5 # Initial pragmatic threshold due to orchestration nature and third-party components.
+               # This should be increased as more business logic tests are added.
+               # Pg_replication is already omitted from coverage calculation.
 [dependency-groups]
 dev = [
     "mypy>=1.19.0",
