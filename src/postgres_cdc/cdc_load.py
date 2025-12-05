@@ -9,7 +9,9 @@ Usage:
     
 Environment Variables:
     LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR) - defaults to INFO
-    All credentials are loaded from .dlt/secrets.toml
+    All credentials are loaded from:
+    - Local: .dlt/secrets.toml
+    - Databricks: dbutils.secrets (scope: dlt_scope)
     
 Configuration:
     slot_name: Replication slot name (default: dlt_cdc_slot)

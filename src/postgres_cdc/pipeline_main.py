@@ -18,7 +18,9 @@ Usage:
 Environment Variables:
     PIPELINE_MODE: Either 'full_load' or 'cdc' (required if --mode not provided)
     LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR) - defaults to INFO
-    All credentials are loaded from .dlt/secrets.toml
+    All credentials are loaded from:
+    - Local: .dlt/secrets.toml
+    - Databricks: dbutils.secrets (scope: dlt_scope)
 """
 
 import sys

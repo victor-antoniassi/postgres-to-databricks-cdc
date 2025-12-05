@@ -249,3 +249,14 @@ databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --pro
 
 ## 📜 License
 MIT
+
+## ⚠️ Known Issues (Databricks Free Tier)
+
+**Serverless Job Execution Failure:**
+When running this pipeline as a Databricks Job on a **Databricks Platform Free Trial** account using Serverless Compute, you may encounter a `Connection refused` error targeting the Unity Catalog Volumes storage endpoint (e.g., `us-east-2.storage.cloud.databricks.com`).
+
+**Hypothesis:**
+This is likely due to strict network egress restrictions on the Free Tier Serverless compute environment, which blocks access to the external storage used by Unity Catalog Volumes.
+
+**Workaround:**
+Execute the pipeline locally (`uv run run_pipeline ...`) as demonstrated in the "Quick Start" section. Local execution successfully connects to Databricks via the public API.
