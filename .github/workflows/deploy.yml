@@ -41,6 +41,9 @@ jobs:
       - name: Run Type Checker (Mypy)
         run: uv run mypy src/
 
+      - name: Run Unit Tests (Pytest)
+        run: uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+
   # Deploy to QA: Runs automatically when code is merged to 'main'
   deploy-qa:
     needs: ci-validation
