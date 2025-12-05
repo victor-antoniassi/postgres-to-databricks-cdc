@@ -86,6 +86,8 @@ def main():
     # Handle catalog and dataset overrides
     if args.catalog:
         os.environ["TARGET_CATALOG"] = args.catalog
+        # Explicitly set dlt configuration for Databricks destination
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__CATALOG"] = args.catalog
         logger.info(f"Target Catalog set via CLI: [cyan]{args.catalog}[/cyan]")
         
     if args.dataset:

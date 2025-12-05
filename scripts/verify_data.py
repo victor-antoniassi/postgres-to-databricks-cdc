@@ -4,6 +4,10 @@ Databricks Data Verification Script
 Verifies that CDC transactions (Inserts, Updates, Deletes) were correctly
 applied to the Databricks Delta tables.
 
+IMPORTANT: The IDs for verification (inserts, updates, deletes) are hardcoded
+within this script. They MUST be manually adjusted to match the IDs generated
+by the `simulate_transactions.py` script for the current test run.
+
 Usage:
     uv run scripts/verify_data.py
 """
@@ -39,17 +43,17 @@ def verify():
         logger.error(f"Failed to load secrets: {e}")
         return
 
-    target_table = "chinook_lakehouse.bronze.invoice"
+    target_table = "dev_chinook_lakehouse.bronze.invoice"
 
     with connect(server_hostname=host, http_path=http_path, access_token=token) as conn:
         with conn.cursor() as cursor:
             
-            # 1. Verify INSERTS (IDs 1590 - 1594)
-            logger.info("Verifying [bold green]INSERTS[/bold green] (Expected IDs: 1590-1594)...")
+            # 1. Verify INSERTS (IDs 1595 - 1604)
+            logger.info("Verifying [bold green]INSERTS[/bold green] (Expected IDs: 1595-1604)...")
             query_inserts = f"""
                 SELECT invoice_id, customer_id, invoice_date, total, _dlt_load_id
                 FROM {target_table}
-                WHERE invoice_id BETWEEN 1590 AND 1594
+                WHERE invoice_id BETWEEN 1595 AND 1604
                 ORDER BY invoice_id
             """
             cursor.execute(query_inserts)
@@ -64,32 +68,32 @@ def verify():
                     table.add_row(str(row.invoice_id), str(row.total), str(row.invoice_date))
                 console.print(table)
                 
-                if len(rows) == 5:
-                    logger.info("[bold green]✓ Success:[/bold green] All 5 inserted records found.")
+                if len(rows) == 10:
+                    logger.info("[bold green]✓ Success:[/bold green] All 10 inserted records found.")
                 else:
-                    logger.warning(f"[bold yellow]![/bold yellow] Found {len(rows)}/5 records.")
+                    logger.warning(f"[bold yellow]![/bold yellow] Found {len(rows)}/10 records.")
             else:
                 logger.error("[bold red]✗ Failure:[/bold red] No inserted records found!")
 
-            # 2. Verify DELETES (ID 1026)
-            logger.info("\nVerifying [bold red]DELETES[/bold red] (ID 1026)...")
-            query_delete = f"SELECT * FROM {target_table} WHERE invoice_id = 1026"
+            # 2. Verify DELETES (ID 811)
+            logger.info("\nVerifying [bold red]DELETES[/bold red] (ID 811)...")
+            query_delete = f"SELECT * FROM {target_table} WHERE invoice_id = 811"
             cursor.execute(query_delete)
             deleted_rows = cursor.fetchall()
             
             if not deleted_rows:
-                logger.info("[bold green]✓ Success:[/bold green] Invoice 1026 does not exist (Confirmed Deleted).")
+                logger.info("[bold green]✓ Success:[/bold green] Invoice 811 does not exist (Confirmed Deleted).")
             else:
                 # Check if it's soft deleted (if columns exist) or raw row
-                logger.error(f"[bold red]✗ Failure:[/bold red] Invoice 1026 still exists! (Found {len(deleted_rows)} row(s))")
+                logger.error(f"[bold red]✗ Failure:[/bold red] Invoice 811 still exists! (Found {len(deleted_rows)} row(s))")
                 console.print(deleted_rows)
 
-            # 3. Verify UPDATES (IDs 1292, 514)
-            logger.info("\nVerifying [bold blue]UPDATES[/bold blue] (IDs 1292, 514)...")
+            # 3. Verify UPDATES (IDs 1110, 479)
+            logger.info("\nVerifying [bold blue]UPDATES[/bold blue] (IDs 1110, 479)...")
             query_updates = f"""
                 SELECT invoice_id, total, billing_address
                 FROM {target_table}
-                WHERE invoice_id IN (1292, 514)
+                WHERE invoice_id IN (1110, 479)
             """
             cursor.execute(query_updates)
             update_rows = cursor.fetchall()

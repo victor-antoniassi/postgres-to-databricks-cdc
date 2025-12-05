@@ -19,9 +19,8 @@ from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
 
-# Add parent directory to path to import utils
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.logger import setup_logger
+# Updated import to match project structure
+from postgres_cdc.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 console = Console()
