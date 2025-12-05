@@ -20,7 +20,10 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
 
 ## 🏗️ Architecture
 
-The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns:
+The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns. It utilizes a **Staging Schema Pattern** automatically managed by `dlt`.
+
+*   **Destination Schema** (e.g., `bronze`): Holds the final, queryable Delta Tables.
+*   **Staging Schema** (e.g., `bronze_staging`): Auto-created by `dlt` to handle temporary tables and volumes required for atomic `MERGE` operations during CDC.
 
 ```mermaid
 flowchart LR
@@ -35,24 +38,33 @@ flowchart LR
     end
     
     subgraph Target [Databricks Unity Catalog]
-        Volume[Staging Volume]
-        Delta[(Delta Table)]
+        subgraph StagingSchema [bronze_staging]
+            VolStaging[Staging Volume]
+            TabStaging[Staging Tables]
+        end
+        
+        subgraph FinalSchema [bronze]
+            Delta[(Final Delta Table)]
+        end
     end
 
     %% Data Flow
     PG -->|Snapshot| FullLoad
     PG -->|WAL Stream| CDC
     
-    FullLoad -->|Parquet| Volume
-    CDC -->|Parquet| Volume
+    FullLoad -->|Parquet| VolStaging
+    CDC -->|Parquet| VolStaging
     
-    Volume -->|REPLACE| Delta
-    Volume -->|MERGE| Delta
+    VolStaging -->|COPY| TabStaging
+    TabStaging -->|MERGE| Delta
+    TabStaging -->|REPLACE| Delta
     
     %% Styling
     style Source fill:#f9f,stroke:#333,stroke-width:2px
     style Target fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style Delta fill:#0277bd,stroke:#fff,color:#fff
+    style StagingSchema fill:#fff9c4,stroke:#fbc02d,stroke-dasharray: 5 5
+    style FinalSchema fill:#b3e5fc,stroke:#0288d1
 ```
 
 > **Note regarding Terminology:** This documentation uses the term **Full Load** to describe the initial bulk load of data. Internally, this utilizes `dlt`'s `write_disposition="replace"` strategy. While `dlt` internally handles some state using "snapshots" (especially for logical replication), we strictly use "Full Load" to describe the user-facing operation of replacing the destination dataset with the source state.
