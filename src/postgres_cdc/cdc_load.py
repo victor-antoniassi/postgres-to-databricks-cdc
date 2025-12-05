@@ -74,6 +74,14 @@ def run_cdc_load():
     # Try to get connection string from Databricks secrets first
     pg_connection_string = get_secret("dlt_scope", "pg_connection_string")
     
+    # Get target configuration from environment (injected by DABs/CI)
+    target_catalog = os.environ.get("TARGET_CATALOG", "chinook_lakehouse")
+    target_dataset = os.environ.get("TARGET_DATASET", "bronze")
+    
+    # Allow overriding connection details if needed
+    server_hostname = os.environ.get("DATABRICKS_SERVER_HOSTNAME", "dbc-2b79b085-f261.cloud.databricks.com")
+    http_path = os.environ.get("DATABRICKS_HTTP_PATH", "/sql/1.0/warehouses/981a241885c8c6df")
+    
     if pg_connection_string:
         logger.info("Loaded credentials from Databricks secrets")
         # Inject into environment so dlt config system can pick it up automatically
@@ -81,9 +89,9 @@ def run_cdc_load():
         os.environ["SOURCES__PG_REPLICATION__CREDENTIALS__DRIVERNAME"] = "postgresql"
         
         # Inject Databricks destination configuration
-        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__CATALOG"] = "chinook_lakehouse"
-        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__SERVER_HOSTNAME"] = "dbc-2b79b085-f261.cloud.databricks.com"
-        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__HTTP_PATH"] = "/sql/1.0/warehouses/981a241885c8c6df"
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__CATALOG"] = target_catalog
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__SERVER_HOSTNAME"] = server_hostname
+        os.environ["DESTINATION__DATABRICKS__CREDENTIALS__HTTP_PATH"] = http_path
     else:
         logger.info("Attempting to load credentials from existing dlt secrets/env vars")
 
@@ -91,7 +99,7 @@ def run_cdc_load():
     pipeline = dlt.pipeline(
         pipeline_name="postgres_prod_to_databricks",
         destination="databricks",
-        dataset_name="bronze"
+        dataset_name=target_dataset
     )
     
     # Get replication configuration (will pick up from env vars or defaults)

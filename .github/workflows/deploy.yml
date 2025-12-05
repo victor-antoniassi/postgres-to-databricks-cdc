@@ -1,0 +1,74 @@
+name: Deploy to Databricks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [created]
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+jobs:
+  # CI Step: Runs on every PR and Push to validate code quality
+  ci-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync
+
+      # Add linting/testing steps here in a real scenario
+      # - name: Run Linter
+      #   run: uv run ruff check .
+
+  # Deploy to QA: Runs automatically when code is merged to 'main'
+  deploy-qa:
+    needs: ci-validation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Install uv (required for wheel build defined in databricks.yml)
+        uses: astral-sh/setup-uv@v3
+
+      - name: Deploy to QA Target
+        run: databricks bundle deploy -t qa
+
+  # Deploy to PROD: Runs only when a Release is created
+  deploy-prod:
+    needs: ci-validation
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Install uv (required for wheel build defined in databricks.yml)
+        uses: astral-sh/setup-uv@v3
+
+      - name: Deploy to Production Target
+        run: databricks bundle deploy -t prod
