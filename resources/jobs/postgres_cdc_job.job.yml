@@ -10,20 +10,26 @@ resources:
           python_wheel_task:
             package_name: postgres-to-databricks-cdc
             entry_point: run_pipeline
-            parameters: ["--mode", "full_load"]
-          spark_env_vars:
-            TARGET_CATALOG: ${var.catalog}
-            TARGET_DATASET: ${var.schema}
+            parameters: 
+              - "--mode"
+              - "full_load"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--dataset"
+              - "${var.schema}"
           environment_key: default
 
         - task_key: cdc_load_task
           python_wheel_task:
             package_name: postgres-to-databricks-cdc
             entry_point: run_pipeline
-            parameters: ["--mode", "cdc"]
-          spark_env_vars:
-            TARGET_CATALOG: ${var.catalog}
-            TARGET_DATASET: ${var.schema}
+            parameters: 
+              - "--mode"
+              - "cdc"
+              - "--catalog"
+              - "${var.catalog}"
+              - "--dataset"
+              - "${var.schema}"
           environment_key: default
 
       environments:

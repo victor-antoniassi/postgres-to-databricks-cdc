@@ -7,10 +7,10 @@ full_load or cdc_load based on the mode parameter.
 
 Usage:
     # Full snapshot load
-    uv run pipeline_main.py --mode full_load
+    uv run pipeline_main.py --mode full_load --catalog chinook --dataset bronze
     
     # CDC incremental load
-    uv run pipeline_main.py --mode cdc
+    uv run pipeline_main.py --mode cdc --catalog chinook --dataset bronze
     
     # Via Lakeflow Jobs (pass as parameter)
     PIPELINE_MODE=full_load uv run pipeline_main.py
@@ -69,11 +69,28 @@ def main():
         choices=["full_load", "cdc"],
         help="Pipeline mode: 'full_load' for initial load or 'cdc' for incremental CDC"
     )
+    parser.add_argument(
+        "--catalog",
+        help="Target Unity Catalog name (overrides TARGET_CATALOG env var)"
+    )
+    parser.add_argument(
+        "--dataset",
+        help="Target dataset/schema name (overrides TARGET_DATASET env var)"
+    )
     
     args = parser.parse_args()
     
     # Get mode from argument or environment variable
     mode = args.mode or os.getenv("PIPELINE_MODE")
+    
+    # Handle catalog and dataset overrides
+    if args.catalog:
+        os.environ["TARGET_CATALOG"] = args.catalog
+        logger.info(f"Target Catalog set via CLI: [cyan]{args.catalog}[/cyan]")
+        
+    if args.dataset:
+        os.environ["TARGET_DATASET"] = args.dataset
+        logger.info(f"Target Dataset set via CLI: [cyan]{args.dataset}[/cyan]")
     
     if not mode:
         logger.error("Pipeline mode must be specified!")
