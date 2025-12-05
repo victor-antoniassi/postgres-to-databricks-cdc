@@ -20,6 +20,7 @@ This project focuses strictly on the **Extract & Load (EL)** phases of modern da
 ## 🛠️ Tech Stack
 
 *   **Core**: Python 3.11+, `dlt` (Data Load Tool), PySpark.
+    *   **CDC Engine**: [dlt verified `pg_replication` source](https://dlthub.com/docs/dlt-ecosystem/verified-sources/pg_replication) (Wal2Json/pgoutput).
 *   **Infrastructure**: Databricks (Unity Catalog, Volumes, Delta Lake), PostgreSQL.
 *   **DevOps & CI/CD**: GitHub Actions, Databricks Asset Bundles (DABs), OAuth Service Principals.
 *   **Quality Engineering**: `uv` (Package Mgmt), `ruff` (Linting), `mypy` (Static Analysis), `pytest` (Testing).
