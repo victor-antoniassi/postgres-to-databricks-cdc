@@ -1,8 +1,21 @@
 # Postgres to Databricks CDC Pipeline
 
+![CI Status](https://github.com/victor-antoniassi/postgres-to-databricks-cdc/actions/workflows/deploy.yml/badge.svg)
+![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
+![Code Style](https://img.shields.io/badge/code%20style-ruff-000000.svg)
+![Type Checker](https://img.shields.io/badge/type%20checker-mypy-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 A production-grade data ingestion pipeline that replicates data from **PostgreSQL** (e.g., Neon, RDS) to **Databricks** (Delta Lake) using **Change Data Capture (CDC)**.
 
 Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestration with **Databricks Lakeflow Jobs**.
+
+## 🛠️ Tech Stack
+
+*   **Core**: Python 3.11+, `dlt` (Data Load Tool), PySpark.
+*   **Infrastructure**: Databricks (Unity Catalog, Volumes, Delta Lake), PostgreSQL.
+*   **DevOps & CI/CD**: GitHub Actions, Databricks Asset Bundles (DABs), OAuth Service Principals.
+*   **Quality Engineering**: `uv` (Package Mgmt), `ruff` (Linting), `mypy` (Static Analysis), `pytest` (Testing).
 
 ## 🚀 Features
 
@@ -60,12 +73,17 @@ flowchart LR
 
 > **Note regarding Terminology:** This documentation uses the term **Full Load** to describe the initial bulk load of data. Internally, this utilizes `dlt`'s `write_disposition="replace"` strategy. While `dlt` internally handles some state using "snapshots" (especially for logical replication), we strictly use "Full Load" to describe the user-facing operation of replacing the destination dataset with the source state.
 
-## 🛠️ Prerequisites
+## 📋 Prerequisites
 
 *   **Python 3.11+**
 *   **uv** (Fast Python package manager) - [Install Guide](https://github.com/astral-sh/uv)
 *   **Databricks Workspace** (Unity Catalog enabled)
 *   **PostgreSQL Database** with `wal_level=logical`
+
+> **🐳 Docker Tip:** Don't have a Postgres instance handy? Spin one up in seconds:
+> ```bash
+> docker run -d --name postgres-cdc -e POSTGRES_PASSWORD=postgres -p 5432:5432 -c wal_level=logical postgres:15
+> ```
 
 ## ⚡ Quick Start (Local Execution)
 
