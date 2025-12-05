@@ -41,3 +41,9 @@ Thumbs.db
 .coverage
 .ruff_cache/
 htmlcov/
+
+# LLM / AI Memory
+.gemini
+
+# LLM / AI Memory
+.gemini

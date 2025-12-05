@@ -13,10 +13,10 @@ Built with [dlt (Data Load Tool)](https://dlthub.com/) and designed for orchestr
 *   **Databricks Native**:
     *   Leverages Unity Catalog Volumes for efficient staging.
     *   Writes directly to Delta Tables with schema evolution.
-*   **Developer Friendly**:
-    *   Fully functional locally (no Spark required for ingestion).
-    *   Includes simulation scripts to generate transactions and test the pipeline end-to-end.
-    *   Orchestrated via `pipeline_main.py` for easy integration with jobs.
+*   **Enterprise CI/CD**:
+    *   **Service Principal Authentication**: Secure OAuth M2M authentication for deployments.
+    *   **Environment Isolation**: Strict separation of concerns with dedicated catalogs (`dev_`, `qa_`, `prod_`).
+    *   **Automated Quality Gates**: Integrated Linting (Ruff), Type Checking (Mypy), and Unit Testing (Pytest).
 
 ## 🏗️ Architecture
 
@@ -102,9 +102,29 @@ Validate that inserts, updates, and deletes were correctly applied to the Delta 
 uv run scripts/verify_data.py
 ```
 
-## ☁️ Deployment to Databricks (Production)
+## 🔄 CI/CD & Quality Engineering
 
-For production, deploy the pipeline as a Databricks Job using **Databricks Asset Bundles (DABs)**.
+This project implements a robust Continuous Integration and Continuous Deployment pipeline using **GitHub Actions**.
+
+### Automated Quality Gates
+Every Push and Pull Request triggers a strict validation pipeline:
+1.  **Linting**: `uv run ruff check .` (Enforces PEP-8 and clean code style).
+2.  **Type Checking**: `uv run mypy src/` (Static analysis for type safety).
+3.  **Unit Testing**: `uv run pytest` (Ensures logic correctness).
+    *   **Coverage**: Enforces minimum code coverage metrics (configured in `pyproject.toml`).
+
+### Environment Strategy
+Deployments are managed via **Databricks Asset Bundles (DABs)** targeting three isolated environments in Unity Catalog:
+
+| Environment | Catalog | Trigger | Authentication |
+| :--- | :--- | :--- | :--- |
+| **Development** | `dev_chinook_lakehouse` | Local CLI | User Credentials |
+| **QA** | `qa_chinook_lakehouse` | Push to `main` | Service Principal |
+| **Production** | `prod_chinook_lakehouse` | GitHub Release | Service Principal |
+
+## ☁️ Deployment to Databricks
+
+For production and QA, the pipeline is deployed automatically via CI/CD. For manual deployments or testing:
 
 ### 1. Setup Secrets in Databricks
 The job uses Databricks Secrets to securely access the database.
@@ -114,11 +134,11 @@ databricks secrets create-scope dlt_scope
 databricks secrets put-secret dlt_scope pg_connection_string --string-value "postgresql://user:pass@host:port/db"
 ```
 
-### 2. Deploy Bundle
-Builds the Python wheel and uploads the job definition.
+### 2. Deploy Bundle (Manual / Dev)
+Builds the Python wheel and uploads the job definition to your development environment.
 
 ```bash
-databricks bundle deploy --profile DEFAULT
+databricks bundle deploy -t dev --profile DEFAULT
 ```
 
 ### 3. Run Jobs
@@ -140,8 +160,9 @@ databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --pro
 
 ```
 .
-├── pyproject.toml             # Project definition and build config
-├── databricks.yml             # Databricks bundle config
+├── pyproject.toml             # Project definition, dependencies, and tool configs (Ruff, Mypy, Coverage)
+├── databricks.yml             # Databricks Asset Bundle (DABs) definition for multi-env deployment
+├── .github/workflows/         # CI/CD Pipeline definitions
 ├── src/
 │   └── postgres_cdc/         # Main package
 │       ├── __init__.py
@@ -150,19 +171,11 @@ databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --pro
 │       ├── cdc_load.py        # CDC incremental pipeline logic
 │       ├── utils/             # Utility modules (logger)
 │       └── pg_replication/    # Custom CDC source module
+├── tests/                     # Unit tests
 ├── scripts/                   # Helper tools (outside package)
-│   ├── cleanup_databricks.py
-│   ├── simulate_transactions.py
-│   ├── verify_data.py        # Verifies CDC data consistency
-│   └── inspect_table.py      # Inspects table schema and control columns
 ├── resources/                 # Databricks Job Definitions (YAML)
 └── .dlt/                      # Local config and secrets
 ```
 
 ## 📜 License
-MIT 
-<!-- CI Trigger Test -->
- 
-<!-- Service Principal CI/CD Test -->
- 
-<!-- Catalog update trigger -->
+MIT
