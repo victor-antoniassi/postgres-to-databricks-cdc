@@ -41,7 +41,7 @@ This project focuses strictly on the **Extract & Load (EL)** phases of modern da
 
 ## ⏱️ Scheduling & Triggers
 
-The current Databricks Job definition is configured with **Manual Triggers** by default.
+The current Databricks Lakeflow Job definition is configured with **Manual Triggers** by default.
 
 *   **Why?** Designed for **On-Demand Demonstration**. This allows reviewers to trigger execution immediately and verify results without waiting for scheduled windows or consuming idle compute resources in the demo environment.
 *   **Production Recommendation:**
@@ -249,7 +249,7 @@ MIT
 ## ⚠️ Known Issues (Databricks Free Tier)
 
 **Serverless Job Execution Failure:**
-When running this pipeline as a Databricks Job on a **Databricks Platform Free Trial** account using Serverless Compute, you may encounter a `Connection refused` error targeting the Unity Catalog Volumes storage endpoint (e.g., `us-east-2.storage.cloud.databricks.com`).
+When running this pipeline as a Databricks Lakeflow Job on a **Databricks Free Edition** account using Serverless Compute, you may encounter a `Connection refused` error targeting the Unity Catalog Volumes storage endpoint (e.g., `us-east-2.storage.cloud.databricks.com`).
 
 **Hypothesis:**
 This is likely due to strict network egress restrictions on the Free Tier Serverless compute environment, which blocks access to the external storage used by Unity Catalog Volumes.
