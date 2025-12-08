@@ -50,10 +50,14 @@ The current Databricks Lakeflow Job definition is configured with **Manual Trigg
 
 ## 🏗️ Architecture
 
-The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns. It leverages Databricks Unity Catalog for data governance and utilizes **Volumes for intermediate data staging**.
+The pipeline operates in two mutually exclusive modes to ensure reliability and clean separation of concerns.
 
 *   **Destination Schema** (e.g., `bronze`): Holds the final, queryable Delta Tables.
-*   **Staging Schema Pattern** (e.g., `bronze_staging`): During **CDC (`MERGE`) operations**, `dlt` automatically creates and manages a separate schema suffixed with `_staging` (e.g., `bronze_staging`). This schema holds temporary tables and volumes for atomic merge transactions. For **Full Load (`REPLACE`) operations**, staging predominantly occurs directly within volumes associated with the final `bronze` schema.
+*   **Operational Modes**:
+    1.  **Full Load (`REPLACE`)**: Takes a snapshot of the source and replaces the target table. Used for initialization or full resets.
+    2.  **CDC (`APPEND`)**: continuously reads the WAL (Write-Ahead Log) and appends every event to the target table.
+        *   **Update Handling:** An update generates a new row with the new values (versioning).
+        *   **Delete Handling:** A delete generates a new row marking the event, preserving the original record (Soft Delete).
 
 ```mermaid
 flowchart LR
@@ -79,8 +83,8 @@ flowchart LR
     FullLoad -->|Parquet to Volume| Volume
     CDC -->|Parquet to Volume| Volume
     
-    Volume -- REPLACE (Full Load) --> Delta
-    Volume -- MERGE (CDC) --> Delta
+    Volume -- REPLACE (Snapshot) --> Delta
+    Volume -- APPEND (History Log) --> Delta
     
     %% Styling
     style Source fill:#f9f,stroke:#333,stroke-width:2px
@@ -130,7 +134,7 @@ access_token = "dapi..." # Or use CLI profile if configured
 Perform the initial full load of your data.
 
 ```bash
-uv run run_pipeline --mode full_load
+uv run python -m src.postgres_cdc.pipeline_main --mode full_load --catalog dev_chinook_lakehouse --dataset bronze
 ```
 
 ### 4. Simulate Transactions (Optional)
@@ -144,10 +148,10 @@ uv run scripts/simulate_transactions.py 5 2 1
 ```
 
 ### 5. Run CDC Load (Incremental)
-Capture the changes and merge them into Databricks.
+Capture the changes and append them to Databricks.
 
 ```bash
-uv run run_pipeline --mode cdc
+uv run python -m src.postgres_cdc.pipeline_main --mode cdc --catalog dev_chinook_lakehouse --dataset bronze
 ```
 
 ### 6. Verify Data
