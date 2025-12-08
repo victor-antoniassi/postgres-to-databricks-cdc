@@ -5,7 +5,7 @@ This module handles full load operations from PostgreSQL to Databricks.
 Uses the standard SQL database source to perform complete table replication.
 
 Usage:
-    uv run full_load.py
+    uv run python -m src.postgres_cdc.full_load
     
 Environment Variables:
     LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR) - defaults to INFO

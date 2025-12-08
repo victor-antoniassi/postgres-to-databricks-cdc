@@ -1,4 +1,5 @@
 """
+
 List Databricks Volumes
 
 Displays volumes in bronze and bronze_staging schemas with rich formatted output.
@@ -11,8 +12,6 @@ Environment Variables:
     All credentials are loaded from .dlt/secrets.toml
 """
 
-import os
-import sys
 import dlt
 from databricks.sql import connect
 from rich.panel import Panel
@@ -83,4 +82,5 @@ def list_volumes():
 
 if __name__ == "__main__":
     list_volumes()
+
 

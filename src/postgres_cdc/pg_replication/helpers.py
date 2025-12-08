@@ -773,9 +773,16 @@ class MessageConsumer:
             }
 
         # determine write disposition
+        # FORCE APPEND: We want an immutable log of events for Bronze
         write_disposition: TWriteDisposition = "append"
-        if self.pub_ops["update"] or self.pub_ops["delete"]:
-            write_disposition = "merge"
+        
+        # Disable hard_delete hint since we are in append mode
+        # if self.pub_ops["delete"]:
+        #     columns["deleted_ts"] = {
+        #         "hard_delete": True,
+        #         "data_type": "timestamp",
+        #         "nullable": True,
+        #     }
 
         # include meta item to emit hints while yielding data
         meta_item = dlt.mark.with_hints(

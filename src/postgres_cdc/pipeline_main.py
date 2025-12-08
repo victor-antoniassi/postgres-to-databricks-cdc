@@ -7,13 +7,13 @@ full_load or cdc_load based on the mode parameter.
 
 Usage:
     # Full snapshot load
-    uv run pipeline_main.py --mode full_load --catalog chinook --dataset bronze
+    uv run python -m src.postgres_cdc.pipeline_main --mode full_load --catalog chinook --dataset bronze
     
     # CDC incremental load
-    uv run pipeline_main.py --mode cdc --catalog chinook --dataset bronze
+    uv run python -m src.postgres_cdc.pipeline_main --mode cdc --catalog chinook --dataset bronze
     
     # Via Lakeflow Jobs (pass as parameter)
-    PIPELINE_MODE=full_load uv run pipeline_main.py
+    PIPELINE_MODE=full_load uv run python -m src.postgres_cdc.pipeline_main
     
 Environment Variables:
     PIPELINE_MODE: Either 'full_load' or 'cdc' (required if --mode not provided)

@@ -5,7 +5,7 @@ This module handles CDC (Change Data Capture) operations from PostgreSQL to Data
 Uses PostgreSQL logical replication to capture and apply incremental changes.
 
 Usage:
-    uv run cdc_load.py
+    uv run python -m src.postgres_cdc.cdc_load
     
 Environment Variables:
     LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR) - defaults to INFO
@@ -68,7 +68,7 @@ def run_cdc_load():
     """
     console.print(Panel.fit(
         "[bold blue]CDC LOAD PIPELINE[/bold blue]\n"
-        "[italic]Continuous Change Data Capture - Merge Disposition[/italic]",
+        "[italic]Continuous Change Data Capture - Append Disposition[/italic]",
         border_style="blue"
     ))
     
@@ -170,10 +170,14 @@ def run_cdc_load():
         credentials=creds
     )
     
-    # Run the pipeline with merge disposition
+    # Force 'append' disposition to override any 'merge' hints from vendorized logic
+    # This ensures we always get an append-only log, even for updates/deletes
+    cdc_source.apply_hints(write_disposition="append")
+    
+    # Run the pipeline with append disposition
     info = pipeline.run(
         cdc_source,
-        write_disposition="merge",
+        write_disposition="append",
         loader_file_format="parquet"
     )
     
@@ -191,7 +195,7 @@ def run_cdc_load():
     summary_table.add_row("Destination", str(pipeline.destination))
     summary_table.add_row("Dataset", pipeline.dataset_name)
     summary_table.add_row("Tables Monitored", str(len(tables)))
-    summary_table.add_row("Write Disposition", "merge")
+    summary_table.add_row("Write Disposition", "append")
     
     console.print(summary_table)
     logger.debug(f"Pipeline info: {info}")
