@@ -21,7 +21,7 @@ This project focuses strictly on the **Extract & Load (EL)** phases of modern da
 
 *   **Core**: Python 3.11+, `dlt` (Data Load Tool), PySpark.
     *   **Full Load Engine**: `dlt.sources.sql_database` (Standard SQL Snapshot).
-    *   **CDC Engine**: `pg_replication` (Wal2Json/pgoutput).
+    *   **CDC Engine**: [`pg_replication` (Wal2Json/pgoutput)](src/postgres_cdc/pg_replication).
         *   *Customization Note:* The `pg_replication` source was modified to force **Append-Only** behavior. While standard replication tools often aim to mirror the database state (Merge), our Lakehouse architecture requires an immutable log of all events.
 *   **Infrastructure**: Databricks (Unity Catalog, Volumes, Delta Lake), PostgreSQL.
 *   **DevOps & CI/CD**: GitHub Actions, Databricks Asset Bundles (DABs), OAuth Service Principals.
