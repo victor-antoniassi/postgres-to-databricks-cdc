@@ -226,8 +226,6 @@ databricks bundle run postgres_cdc_job_definition --task-key full_load_task --pr
 databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --profile DEFAULT
 ```
 
-> **Note on Serverless:** If using Databricks Serverless, ensure your Network Policies allow egress to `us-east-2.storage.cloud.databricks.com` (or your region's storage endpoint), otherwise the job may fail with `Connection refused`.
-
 ## 📂 Project Structure
 
 ```
@@ -252,7 +250,7 @@ databricks bundle run postgres_cdc_job_definition --task-key cdc_load_task --pro
 ## 📜 License
 MIT
 
-## ⚠️ Known Issues (Databricks Free Tier)
+## ⚠️ Known Issues (Databricks Free Edition)
 
 **Serverless Job Execution Failure:**
 When running this pipeline as a Databricks Lakeflow Job on a **Databricks Free Edition** account using Serverless Compute, you may encounter a `Connection refused` error targeting the Unity Catalog Volumes storage endpoint (e.g., `us-east-2.storage.cloud.databricks.com`).
