@@ -19,7 +19,7 @@ This project focuses strictly on the **Extract & Load (EL)** phases of modern da
 
 ## 🛠️ Tech Stack
 
-*   **Core**: Python 3.11+, `dlt` (Data Load Tool), PySpark.
+*   **Core**: Python 3.11+, [`dlt` (Data Load Tool)](https://dlthub.com/), PySpark.
     *   **Full Load Engine**: `dlt.sources.sql_database` (Standard SQL Snapshot).
     *   **CDC Engine**: [`pg_replication` (Wal2Json/pgoutput)](src/postgres_cdc/pg_replication).
         *   *Customization Note:* The `pg_replication` source was modified to force **Append-Only** behavior. While standard replication tools often aim to mirror the database state (Merge), our Lakehouse architecture requires an immutable log of all events.
@@ -63,35 +63,64 @@ The pipeline operates in two mutually exclusive modes to ensure reliability and 
 
 ```mermaid
 flowchart LR
-    subgraph Source [Source System]
-        PG[(PostgreSQL)]
+    %% Global settings for curves and line colors
+    %%{init: {'theme': 'base', 'themeVariables': { 'lineColor': '#585858'}}}%%
+
+    %% --- Area 1: Source System ---
+    subgraph Source_System [Source System]
+        PG[("PostgreSQL")]:::db_source
     end
 
-    subgraph Pipeline [dlt Orchestrator]
-        direction TB
-        FullLoad[Full Load Mode]
-        CDC[CDC Mode]
+    %% --- Area 2: Databricks Lakeflow ---
+    subgraph Lakeflow_Jobs [Databricks Lakeflow Jobs]
+        
+        subgraph Engine [Engine: dlt Library]
+            direction TB
+            FL[Mode: Full Load]:::white_box
+            CDC[Mode: CDC Stream]:::white_box
+        end
+        
+        subgraph Unity_Catalog [Unity Catalog Storage]
+            
+            subgraph Staging [Staging Layer]
+                direction TB
+                Vol_FL[Full Load Volume]:::white_box
+                Vol_CDC[CDC Stream Volume]:::white_box
+            end
+            
+            Delta[("Delta Table")]:::db_delta
+        end
     end
+
+    %% --- Connections and Flow ---
     
-    subgraph Target [Databricks Unity Catalog]
-        Volume[Staging Volume]
-        Delta[(Delta Table)]
-    end
+    %% Upper Path: Full Load
+    PG -->|Snapshot Read| FL
+    FL -->|"1. Write Parquet"| Vol_FL
+    Vol_FL -.-o|"2. REPLACE (Swap)"| Delta
 
-    %% Data Flow
-    PG -->|Snapshot| FullLoad
+    %% Lower Path: CDC
     PG -->|WAL Stream| CDC
+    CDC -->|"1. Write Parquet"| Vol_CDC
+    Vol_CDC ==>|"2. APPEND (History)"| Delta
+
+    %% --- Styling (Classes) ---
+    classDef default fill:#fff,stroke:#333,stroke-width:1px;
     
-    FullLoad -->|Parquet to Volume| Volume
-    CDC -->|Parquet to Volume| Volume
-    
-    Volume -- REPLACE (Snapshot) --> Delta
-    Volume -- APPEND (History Log) --> Delta
-    
-    %% Styling
-    style Source fill:#f9f,stroke:#333,stroke-width:2px
-    style Target fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style Delta fill:#0277bd,stroke:#fff,color:#fff
+    %% Subgraph Styles (Containers)
+    style Source_System fill:#fce4ec,stroke:#f48fb1,stroke-width:2px,color:#880e4f
+    style Lakeflow_Jobs fill:#fff3e0,stroke:#ff9800,stroke-width:2px,stroke-dasharray: 5 5,color:#e65100
+    style Engine fill:#ffe0b2,stroke:#ffb74d,stroke-width:1px,color:#ef6c00
+    style Unity_Catalog fill:#e1f5fe,stroke:#4fc3f7,stroke-width:2px,color:#01579b
+    style Staging fill:#e3f2fd,stroke:none,color:#0277bd
+
+    %% Node Styles (Boxes and Databases)
+    classDef db_source fill:#212121,stroke:#000,color:#fff;
+    classDef db_delta fill:#0277bd,stroke:#fff,color:#fff;
+    classDef white_box fill:#ffffff,stroke:#90caf9,stroke-width:1px,color:#424242;
+
+    %% Fine-tuning Links
+    linkStyle default stroke:#757575,stroke-width:1px;
 ```
 
 > **Note regarding Terminology:** This documentation uses the term **Full Load** to describe the initial bulk load of data. Internally, this utilizes `dlt`'s `write_disposition="replace"` strategy. While `dlt` internally handles some state using "snapshots" (especially for logical replication), we strictly use "Full Load" to describe the user-facing operation of replacing the destination dataset with the source state.
@@ -259,4 +288,4 @@ When running this pipeline as a Databricks Lakeflow Job on a **Databricks Free E
 This is likely due to strict network egress restrictions on the Free Tier Serverless compute environment, which blocks access to the external storage used by Unity Catalog Volumes.
 
 **Workaround:**
-Execute the pipeline locally (`uv run run_pipeline ...`) as demonstrated in the "Quick Start" section. Local execution successfully connects to Databricks via the public API.
+Execute the pipeline locally as demonstrated in the "Quick Start" section. Local execution successfully connects to Databricks via the public API.
