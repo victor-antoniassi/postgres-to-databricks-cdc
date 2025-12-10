@@ -767,7 +767,6 @@ class MessageConsumer:
             columns["lsn"]["dedup_sort"] = "desc"
         if self.pub_ops["delete"]:
             columns["deleted_ts"] = {
-                "hard_delete": True,
                 "data_type": "timestamp",
                 "nullable": True,
             }
