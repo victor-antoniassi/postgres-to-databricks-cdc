@@ -56,13 +56,8 @@ logger = setup_logger(__name__)
 console = Console()
 
 
-def main():
-    """
-    Main orchestrator function.
-    
-    Routes execution to appropriate pipeline module based on mode parameter.
-    Enforces exclusive execution - only runs ONE mode per invocation.
-    """
+def parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="PostgreSQL to Databricks Pipeline Orchestrator"
     )
@@ -79,8 +74,17 @@ def main():
         "--dataset",
         help="Target dataset/schema name (overrides TARGET_DATASET env var)"
     )
+    return parser.parse_args()
+
+
+def main():
+    """
+    Main orchestrator function.
     
-    args = parser.parse_args()
+    Routes execution to appropriate pipeline module based on mode parameter.
+    Enforces exclusive execution - only runs ONE mode per invocation.
+    """
+    args = parse_args()
     
     # Get mode from argument or environment variable
     mode = args.mode or os.getenv("PIPELINE_MODE")
